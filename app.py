@@ -156,5 +156,16 @@ def get_cart():
         cart_list.append({'id': cart_item.id, 'product_id': cart_item.product_id, 'quantity': cart_item.quantity})
     return jsonify(cart_list)
 
+@app.route('/api/cart/remove/<int:cart_item_id>', methods=['DELETE'])
+@login_required
+def delete_cart_item(cart_item_id):
+    cart_item = db.session.query(CartItem).filter(CartItem.id == cart_item_id, CartItem.user_id == current_user.id).first()
+    if cart_item and cart_item.user_id == current_user.id:
+        db.session.delete(cart_item)
+        db.session.commit()
+        return jsonify({'message': 'Cart item deleted successfully!'})
+    else:
+        return jsonify({'message': 'Cart item not found'}), 404
+
 if __name__ == "__main__":
     app.run(debug=True)
