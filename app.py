@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from flask_login import UserMixin
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecommerce-db.sqlite3'
@@ -8,7 +9,7 @@ db = SQLAlchemy(app)
 
 CORS(app)
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
@@ -22,6 +23,21 @@ class Product(db.Model):
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
+
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.json
+    if 'username' in data and 'password' in data:
+        existing_user = User.query.filter_by(username=data['username']).first()
+        if existing_user:
+            return jsonify({'message': 'User already exists'}), 400
+        else:
+            user = User(username=data['username'], password=data['password'])
+            db.session.add(user)
+            db.session.commit()
+        return jsonify({'message': 'User registered successfully!'})
+    else:
+        return jsonify({'message': 'Missing username or password in the request data'}), 400
 
 @app.route('/api/products/add', methods=['POST'])
 def add_product():
