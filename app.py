@@ -142,10 +142,19 @@ def add_to_cart(product_id):
     product = db.session.get(Product, product_id)
     if not product:
         return jsonify({'message': 'Product not found'}), 404
-    cart_item = CartItem(product_id=product_id, user_id=session['user_id'])
+    cart_item = CartItem(product_id=product_id, user_id=current_user.id)
     db.session.add(cart_item)
     db.session.commit()
     return jsonify({'message': 'Product added to cart successfully!'})
+
+@app.route('/api/cart', methods=['GET'])
+@login_required
+def get_cart():
+    cart_items = db.session.query(CartItem).filter_by(user_id=current_user.id).all()
+    cart_list = []
+    for cart_item in cart_items:
+        cart_list.append({'id': cart_item.id, 'product_id': cart_item.product_id, 'quantity': cart_item.quantity})
+    return jsonify(cart_list)
 
 if __name__ == "__main__":
     app.run(debug=True)
