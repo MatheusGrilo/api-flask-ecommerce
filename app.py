@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_login import (
@@ -9,6 +9,7 @@ from flask_login import (
     logout_user,
     current_user,
 )
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "create_a_secure_env_key_for_production"
@@ -25,7 +26,7 @@ CORS(app)
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.Text, nullable=False)
     cart = db.relationship("CartItem", backref="user", lazy=True)
 
 
@@ -56,7 +57,10 @@ def register():
         if existing_user:
             return jsonify({"message": "User already exists"}), 400
         else:
-            user = User(username=data["username"], password=data["password"])
+            hashed_password = generate_password_hash(
+                data["password"], method="pbkdf2:sha256"
+            )
+            user = User(username=data["username"], password=hashed_password)
             db.session.add(user)
             db.session.commit()
         return jsonify({"message": "User registered successfully!"})
@@ -76,7 +80,7 @@ def login():
     data = request.json
     if "username" in data and "password" in data:
         user = User.query.filter_by(username=data["username"]).first()
-        if user and user.password == data["password"]:
+        if user and check_password_hash(user.password, data["password"]):
             login_user(user)
             return jsonify({"message": "Login successful!"})
         else:
