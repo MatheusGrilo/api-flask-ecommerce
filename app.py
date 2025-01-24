@@ -1,11 +1,16 @@
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_login import UserMixin
+from flask_login import UserMixin, LoginManager
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'create_a_secure_env_key_for_production'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecommerce-db.sqlite3'
+
+login_manager = LoginManager()
 db = SQLAlchemy(app)
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
 CORS(app)
 
@@ -38,6 +43,17 @@ def register():
         return jsonify({'message': 'User registered successfully!'})
     else:
         return jsonify({'message': 'Missing username or password in the request data'}), 400
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    if 'username' in data and 'password' in data:
+        user = User.query.filter_by(username=data['username']).first()
+        if user and user.password == data['password']:
+            session['user_id'] = user.id
+            return jsonify({'message': 'Login successful!'})
+        else:
+            return jsonify({'message': 'Invalid username or password'}), 401
 
 @app.route('/api/products/add', methods=['POST'])
 def add_product():
