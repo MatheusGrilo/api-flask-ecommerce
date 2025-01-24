@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -44,6 +44,14 @@ def get_product(product_id):
         return jsonify({'id': product.id, 'name': product.name, 'price': product.price, 'description': product.description})
     else:
         return jsonify({'message': 'Product not found'}), 404
+
+@app.route('/api/products')
+def get_products():
+    products = db.session.query(Product).all()
+    product_list = []
+    for product in products:
+        product_list.append({'id': product.id, 'name': product.name, 'price': product.price})
+    return jsonify(product_list)
 
 if __name__ == "__main__":
     app.run(debug=True)
