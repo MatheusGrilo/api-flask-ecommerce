@@ -9,6 +9,27 @@ schemes:
 
 paths:
 
+  /register:
+    post:
+      summary: Register
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+              password:
+                type: string
+      responses:
+        200:
+          description: User registered successfully!
+
+        400:
+          description: Bad Request. User already exists
+
   /login:
     post:
       summary: Log in
@@ -25,7 +46,7 @@ paths:
                 type: string
       responses:
         200:
-          headers: 
+          headers:
             Set-Cookie:
               type: string
 
