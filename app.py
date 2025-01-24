@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_login import UserMixin, LoginManager, login_required, login_user, logout_user
+from flask_login import UserMixin, LoginManager, login_required, login_user, logout_user, current_user
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'create_a_secure_env_key_for_production'
@@ -53,7 +53,7 @@ def register():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -134,6 +134,18 @@ def update_product(product_id):
         product.description = data['description']
     db.session.commit()
     return jsonify({'message': 'Product updated successfully!'})
+
+
+@app.route('/api/cart/add/<int:product_id>', methods=['POST'])
+@login_required
+def add_to_cart(product_id):
+    product = db.session.get(Product, product_id)
+    if not product:
+        return jsonify({'message': 'Product not found'}), 404
+    cart_item = CartItem(product_id=product_id, user_id=session['user_id'])
+    db.session.add(cart_item)
+    db.session.commit()
+    return jsonify({'message': 'Product added to cart successfully!'})
 
 if __name__ == "__main__":
     app.run(debug=True)
