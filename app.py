@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_login import UserMixin, LoginManager
+from flask_login import UserMixin, LoginManager, login_required, login_user
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'create_a_secure_env_key_for_production'
@@ -44,18 +44,25 @@ def register():
     else:
         return jsonify({'message': 'Missing username or password in the request data'}), 400
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
     if 'username' in data and 'password' in data:
         user = User.query.filter_by(username=data['username']).first()
         if user and user.password == data['password']:
-            session['user_id'] = user.id
+            login_user(user)
             return jsonify({'message': 'Login successful!'})
         else:
             return jsonify({'message': 'Invalid username or password'}), 401
+    else:
+        return jsonify({'message': 'Missing username or password in the request data'}), 400
 
 @app.route('/api/products/add', methods=['POST'])
+@login_required
 def add_product():
     data = request.json
     if 'name' in data and 'price' in data:
@@ -67,6 +74,7 @@ def add_product():
         return jsonify({'message': 'Missing name or price in the request data'}), 400
 
 @app.route('/api/products/delete/<int:product_id>', methods=['DELETE'])
+@login_required
 def delete_product(product_id):
     product = db.session.get(Product, product_id) or ()
     if product:
@@ -78,6 +86,7 @@ def delete_product(product_id):
 
 
 @app.route('/api/products/<int:product_id>')
+@login_required
 def get_product(product_id):
     product = db.session.get(Product, product_id)
     if product:
@@ -86,6 +95,7 @@ def get_product(product_id):
         return jsonify({'message': 'Product not found'}), 404
 
 @app.route('/api/products')
+@login_required
 def get_products():
     products = db.session.query(Product).all()
     product_list = []
@@ -96,6 +106,7 @@ def get_products():
 
 
 @app.route('/api/products/update/<int:product_id>', methods=['PUT'])
+@login_required
 def update_product(product_id):
     product = db.session.get(Product, product_id)
     if not product:
