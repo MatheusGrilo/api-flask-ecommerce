@@ -217,5 +217,21 @@ def delete_cart_item(cart_item_id):
         return jsonify({"message": "Cart item not found"}), 404
 
 
+@app.route("/api/cart/checkout", methods=["POST"])
+@login_required
+def checkout():
+    cart_items = db.session.query(CartItem).filter_by(user_id=current_user.id).all()
+    if len(cart_items) == 0:
+        return jsonify({"message": "Cart is empty!"}), 400
+    else:
+        total = 0
+        for cart_item in cart_items:
+            product = db.session.get(Product, cart_item.product_id)
+            total += product.price * cart_item.quantity
+            db.session.delete(cart_item)
+        db.session.commit()
+        return jsonify({"message": f"Checkout successful! Total amount paid: ${total}"})
+
+
 if __name__ == "__main__":
     app.run(debug=True)
