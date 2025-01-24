@@ -10,10 +10,30 @@ from flask_login import (
     current_user,
 )
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "create_a_secure_env_key_for_production"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///ecommerce-db.sqlite3"
+app.config["SECRET_KEY"] = (
+    os.getenv("SECRET_KEY") if os.getenv("SECRET_KEY") else "use_some_key_as_default"
+)
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    os.getenv("SQLALCHEMY_DATABASE_URI")
+    if os.getenv("SQLALCHEMY_DATABASE_URI")
+    else "sqlite:///ecommerce-db.sqlite3"
+)
+app.config["DEBUG"] = os.getenv("DEBUG") if os.getenv("DEBUG") else True
+
+if app.config["DEBUG"] == "True":
+    print("DEBUG mode is enabled in environment variables.")
+    print(
+        f"SQLALCHEMY_DATABASE_URI: {app.config['SQLALCHEMY_DATABASE_URI']}"
+        if app.config["SQLALCHEMY_DATABASE_URI"]
+        else "Using default SQLite database"
+    )
+
+    print(f"SECRET_KEY: {app.config['SECRET_KEY']}")
 
 login_manager = LoginManager()
 db = SQLAlchemy(app)
@@ -238,4 +258,4 @@ def checkout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=app.config["DEBUG"])
